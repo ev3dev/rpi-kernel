@@ -15,6 +15,7 @@ endif
 ifeq ($(CONFIG_ARCH_BCM2835),y)
    RPI_DT_OVERLAYS=y
 endif
+dtb-$(RPI_DT_OVERLAYS) += brickpi-overlay.dtb
 
 dtb-$(CONFIG_ARCH_ALPINE) += \
 	alpine-db.dtb
