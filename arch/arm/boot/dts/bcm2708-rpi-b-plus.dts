@@ -145,10 +145,12 @@
 		i2c2_baudrate = <&i2c2>,"clock-frequency:0";
 		core_freq = <&clk_core>,"clock-frequency:0";
 
+		act_led_label = <&act_led>,"label";
 		act_led_gpio = <&act_led>,"gpios:4";
 		act_led_activelow = <&act_led>,"gpios:8";
 		act_led_trigger = <&act_led>,"linux,default-trigger";
 
+		pwr_led_label = <&pwr_led>,"label";
 		pwr_led_gpio = <&pwr_led>,"gpios:4";
 		pwr_led_activelow = <&pwr_led>,"gpios:8";
 		pwr_led_trigger = <&pwr_led>,"linux,default-trigger";
