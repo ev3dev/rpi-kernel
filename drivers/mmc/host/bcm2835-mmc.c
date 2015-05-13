@@ -75,6 +75,9 @@ pr_debug(DRIVER_NAME " [%s()]: " f, __func__, ## x)
 #define BCM2835_VCMMU_SHIFT		(0x7E000000 - BCM2708_PERI_BASE)
 
 
+/*static */unsigned mmc_debug;
+/*static */unsigned mmc_debug2;
+
 struct bcm2835_host {
 	spinlock_t				lock;
 
@@ -139,19 +142,32 @@ struct bcm2835_host {
 };
 
 
-static inline void bcm2835_mmc_writel(struct bcm2835_host *host, u32 val, int reg)
+static inline void bcm2835_mmc_writel(struct bcm2835_host *host, u32 val, int reg, int from)
 {
+	u32 delay;
+	lockdep_assert_held_once(&host->lock);
 	writel(val, host->ioaddr + reg);
 	udelay(BCM2835_SDHCI_WRITE_DELAY(max(host->clock, MIN_FREQ)));
+
+	delay = ((mmc_debug >> 16) & 0xf) << ((mmc_debug >> 20) & 0xf);
+	if (delay && !((1<<from) & mmc_debug2))
+		udelay(delay);
 }
 
 static inline void mmc_raw_writel(struct bcm2835_host *host, u32 val, int reg)
 {
+	u32 delay;
+	lockdep_assert_held_once(&host->lock);
 	writel(val, host->ioaddr + reg);
+
+	delay = ((mmc_debug >> 24) & 0xf) << ((mmc_debug >> 28) & 0xf);
+	if (delay)
+		udelay(delay);
 }
 
 static inline u32 bcm2835_mmc_readl(struct bcm2835_host *host, int reg)
 {
+	lockdep_assert_held_once(&host->lock);
 	return readl(host->ioaddr + reg);
 }
 
@@ -167,7 +183,7 @@ static inline void bcm2835_mmc_writew(struct bcm2835_host *host, u16 val, int re
 	if (reg == SDHCI_TRANSFER_MODE)
 		host->shadow = newval;
 	else
-		bcm2835_mmc_writel(host, newval, reg & ~3);
+		bcm2835_mmc_writel(host, newval, reg & ~3, 0);
 
 }
 
@@ -179,7 +195,7 @@ static inline void bcm2835_mmc_writeb(struct bcm2835_host *host, u8 val, int reg
 	u32 mask = 0xff << byte_shift;
 	u32 newval = (oldval & ~mask) | (val << byte_shift);
 
-	bcm2835_mmc_writel(host, newval, reg & ~3);
+	bcm2835_mmc_writel(host, newval, reg & ~3, 1);
 }
 
 
@@ -211,7 +227,7 @@ static void bcm2835_mmc_unsignal_irqs(struct bcm2835_host *host, u32 clear)
 	ier &= ~clear;
 	/* change which requests generate IRQs - makes no difference to
 	   the content of SDHCI_INT_STATUS, or the need to acknowledge IRQs */
-	bcm2835_mmc_writel(host, ier, SDHCI_SIGNAL_ENABLE);
+	bcm2835_mmc_writel(host, ier, SDHCI_SIGNAL_ENABLE, 2);
 }
 
 
@@ -263,7 +279,9 @@ static void bcm2835_mmc_dumpregs(struct bcm2835_host *host)
 static void bcm2835_mmc_reset(struct bcm2835_host *host, u8 mask)
 {
 	unsigned long timeout;
+	unsigned long flags;
 
+	spin_lock_irqsave(&host->lock, flags);
 	bcm2835_mmc_writeb(host, mask, SDHCI_SOFTWARE_RESET);
 
 	if (mask & SDHCI_RESET_ALL)
@@ -281,19 +299,23 @@ static void bcm2835_mmc_reset(struct bcm2835_host *host, u8 mask)
 			return;
 		}
 		timeout--;
+		spin_unlock_irqrestore(&host->lock, flags);
 		mdelay(1);
+		spin_lock_irqsave(&host->lock, flags);
 	}
 
 	if (100-timeout > 10 && 100-timeout > host->max_delay) {
 		host->max_delay = 100-timeout;
 		pr_warning("Warning: MMC controller hung for %d ms\n", host->max_delay);
 	}
+	spin_unlock_irqrestore(&host->lock, flags);
 }
 
 static void bcm2835_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios);
 
 static void bcm2835_mmc_init(struct bcm2835_host *host, int soft)
 {
+	unsigned long flags;
 	if (soft)
 		bcm2835_mmc_reset(host, SDHCI_RESET_CMD|SDHCI_RESET_DATA);
 	else
@@ -305,8 +327,10 @@ static void bcm2835_mmc_init(struct bcm2835_host *host, int soft)
 		    SDHCI_INT_TIMEOUT | SDHCI_INT_DATA_END |
 		    SDHCI_INT_RESPONSE;
 
-	bcm2835_mmc_writel(host, host->ier, SDHCI_INT_ENABLE);
-	bcm2835_mmc_writel(host, host->ier, SDHCI_SIGNAL_ENABLE);
+	spin_lock_irqsave(&host->lock, flags);
+	bcm2835_mmc_writel(host, host->ier, SDHCI_INT_ENABLE, 3);
+	bcm2835_mmc_writel(host, host->ier, SDHCI_SIGNAL_ENABLE, 3);
+	spin_unlock_irqrestore(&host->lock, flags);
 
 	if (soft) {
 		/* force clock reconfiguration */
@@ -505,11 +529,14 @@ static void bcm2835_mmc_transfer_dma(struct bcm2835_host *host)
 		dev_err(mmc_dev(host->mmc), "dma_map_sg returned zero length\n");
 	}
 	if (desc) {
+		unsigned long flags;
+		spin_lock_irqsave(&host->lock, flags);
 		bcm2835_mmc_unsignal_irqs(host, SDHCI_INT_DATA_AVAIL |
 						    SDHCI_INT_SPACE_AVAIL);
 		host->tx_desc = desc;
 		desc->callback = bcm2835_mmc_dma_complete;
 		desc->callback_param = host;
+		spin_unlock_irqrestore(&host->lock, flags);
 		dmaengine_submit(desc);
 		dma_async_issue_pending(dma_chan);
 	}
@@ -528,8 +555,8 @@ static void bcm2835_mmc_set_transfer_irqs(struct bcm2835_host *host)
 	else
 		host->ier = (host->ier & ~dma_irqs) | pio_irqs;
 
-	bcm2835_mmc_writel(host, host->ier, SDHCI_INT_ENABLE);
-	bcm2835_mmc_writel(host, host->ier, SDHCI_SIGNAL_ENABLE);
+	bcm2835_mmc_writel(host, host->ier, SDHCI_INT_ENABLE, 4);
+	bcm2835_mmc_writel(host, host->ier, SDHCI_SIGNAL_ENABLE, 4);
 }
 
 
@@ -611,7 +638,7 @@ static void bcm2835_mmc_set_transfer_mode(struct bcm2835_host *host,
 			mode |= SDHCI_TRNS_AUTO_CMD12;
 		else if (host->mrq->sbc && (host->flags & SDHCI_AUTO_CMD23)) {
 			mode |= SDHCI_TRNS_AUTO_CMD23;
-			bcm2835_mmc_writel(host, host->mrq->sbc->arg, SDHCI_ARGUMENT2);
+			bcm2835_mmc_writel(host, host->mrq->sbc->arg, SDHCI_ARGUMENT2, 5);
 		}
 	}
 
@@ -674,7 +701,7 @@ void bcm2835_mmc_send_command(struct bcm2835_host *host, struct mmc_command *cmd
 
 	bcm2835_mmc_prepare_data(host, cmd);
 
-	bcm2835_mmc_writel(host, cmd->arg, SDHCI_ARGUMENT);
+	bcm2835_mmc_writel(host, cmd->arg, SDHCI_ARGUMENT, 6);
 
 	bcm2835_mmc_set_transfer_mode(host, cmd);
 
@@ -831,8 +858,8 @@ static void bcm2835_mmc_enable_sdio_irq_nolock(struct bcm2835_host *host, int en
 		else
 			host->ier &= ~SDHCI_INT_CARD_INT;
 
-		bcm2835_mmc_writel(host, host->ier, SDHCI_INT_ENABLE);
-		bcm2835_mmc_writel(host, host->ier, SDHCI_SIGNAL_ENABLE);
+		bcm2835_mmc_writel(host, host->ier, SDHCI_INT_ENABLE, 7);
+		bcm2835_mmc_writel(host, host->ier, SDHCI_SIGNAL_ENABLE, 7);
 		mmiowb();
 	}
 }
@@ -979,7 +1006,7 @@ static irqreturn_t bcm2835_mmc_irq(int irq, void *dev_id)
 		/* Clear selected interrupts. */
 		mask = intmask & (SDHCI_INT_CMD_MASK | SDHCI_INT_DATA_MASK |
 				  SDHCI_INT_BUS_POWER);
-		bcm2835_mmc_writel(host, mask, SDHCI_INT_STATUS);
+		bcm2835_mmc_writel(host, mask, SDHCI_INT_STATUS, 8);
 
 
 		if (intmask & SDHCI_INT_CMD_MASK)
@@ -1009,7 +1036,7 @@ static irqreturn_t bcm2835_mmc_irq(int irq, void *dev_id)
 
 		if (intmask) {
 			unexpected |= intmask;
-			bcm2835_mmc_writel(host, intmask, SDHCI_INT_STATUS);
+			bcm2835_mmc_writel(host, intmask, SDHCI_INT_STATUS, 9);
 		}
 
 		if (result == IRQ_NONE)
@@ -1251,8 +1278,10 @@ static void bcm2835_mmc_tasklet_finish(unsigned long param)
 		 (mrq->data && (mrq->data->error ||
 		  (mrq->data->stop && mrq->data->stop->error))))) {
 
+		spin_unlock_irqrestore(&host->lock, flags);
 		bcm2835_mmc_reset(host, SDHCI_RESET_CMD);
 		bcm2835_mmc_reset(host, SDHCI_RESET_DATA);
+		spin_lock_irqsave(&host->lock, flags);
 	}
 
 	host->mrq = NULL;
@@ -1267,7 +1296,7 @@ static void bcm2835_mmc_tasklet_finish(unsigned long param)
 
 
 
-int bcm2835_mmc_add_host(struct bcm2835_host *host)
+static int bcm2835_mmc_add_host(struct bcm2835_host *host)
 {
 	struct mmc_host *mmc;
 #ifndef FORCE_PIO
@@ -1297,9 +1326,8 @@ int bcm2835_mmc_add_host(struct bcm2835_host *host)
 
 	host->flags = SDHCI_AUTO_CMD23;
 
-	spin_lock_init(&host->lock);
-
-
+	if (mmc_debug || mmc_debug2)
+		pr_info("mmc_debug:%x mmc_debug2:%x\n", mmc_debug, mmc_debug2);
 #ifdef FORCE_PIO
 	pr_info("Forcing PIO mode\n");
 	host->have_dma = false;
@@ -1399,6 +1427,7 @@ static int bcm2835_mmc_probe(struct platform_device *pdev)
 	mmc = mmc_alloc_host(sizeof(struct bcm2835_host), dev);
 	host = mmc_priv(mmc);
 	host->mmc = mmc;
+	spin_lock_init(&host->lock);
 
 
 	if (IS_ERR(host)) {
@@ -1464,7 +1493,6 @@ static int bcm2835_mmc_probe(struct platform_device *pdev)
 	mmc_of_parse(mmc);
 #endif
 	host->timeout = msecs_to_jiffies(1000);
-	spin_lock_init(&host->lock);
 	mmc->ops = &bcm2835_ops;
 	return bcm2835_mmc_add_host(host);
 
@@ -1551,6 +1579,8 @@ static struct platform_driver bcm2835_mmc_driver = {
 };
 module_platform_driver(bcm2835_mmc_driver);
 
+module_param(mmc_debug, uint, 0644);
+module_param(mmc_debug2, uint, 0644);
 MODULE_ALIAS("platform:mmc-bcm2835");
 MODULE_DESCRIPTION("BCM2835 SDHCI driver");
 MODULE_LICENSE("GPL v2");
