@@ -1,7 +1,7 @@
 VERSION = 3
 PATCHLEVEL = 18
 SUBLEVEL = 13
-EXTRAVERSION = -5-rc1-ev3dev-rpi
+EXTRAVERSION = -5-ev3dev-rpi
 NAME = Diseased Newt
 
 # *DOCUMENTATION*
