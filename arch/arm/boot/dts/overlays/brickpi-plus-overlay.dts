@@ -1,4 +1,4 @@
-// Definitions for Dexter Industries BrickPi
+// Definitions for Dexter Industries BrickPi+
 // http://www.dexterindustries.com/BrickPi/
 /dts-v1/;
 /plugin/;
@@ -9,9 +9,17 @@
 	fragment@0 {
 		target = <&i2c_arm>;
 		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
 			status = "okay";
-			// TODO: Need to flag this as LEGO_I2C so we can use sensors with
-			// address 0x01 on input port 5.
+
+			// TODO: Would be better as a power_supply driver
+			// See https://github.com/ev3dev/ev3dev/issues/413
+			mcp3021: mcp3021@48 {
+				compatible = "mc,mcp3021";
+				reg = <0x48>;
+				status = "okay";
+			};
 		};
 	};
 
@@ -31,6 +39,8 @@
 			};
 		};
 	};
+
+	// TODO: Should add an option to enable the gpio for the RESET line
 
 	__overrides__ {
 		brickpi_led1_gpio = <&brickpi_led1>,"gpios:4";
