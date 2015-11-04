@@ -7,6 +7,15 @@
 	compatible = "brcm,bcm2708", "brcm,bcm2709";
 
 	fragment@0 {
+		target = <&uart0>;
+		__overlay__ {
+			status = "okay";
+			// custom property to identify that a BrickPi is attached to this port
+			brickpi,status = "okay";
+		};
+	};
+
+	fragment@1 {
 		target = <&i2c_arm>;
 		__overlay__ {
 			status = "okay";
@@ -15,7 +24,7 @@
 		};
 	};
 
-	fragment@1 {
+	fragment@2 {
 		target = <&leds>;
 		__overlay__ {
 			brickpi_led1: bpi1 {
