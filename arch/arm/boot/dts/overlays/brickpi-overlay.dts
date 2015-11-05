@@ -18,9 +18,16 @@
 	fragment@1 {
 		target = <&i2c_arm>;
 		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
 			status = "okay";
-			// TODO: Need to flag this as LEGO_I2C so we can use sensors with
-			// address 0x01 on input port 5.
+
+			// only BrickPi+ has battery voltage monitor, so disabled by default
+			brickpi_battery: brickpi_battery@48 {
+				compatible = "dexterind,brickpi-battery";
+				reg = <0x48>;
+				status = "disabled";
+			};
 		};
 	};
 
@@ -46,5 +53,6 @@
 		brickpi_led1_trigger = <&brickpi_led1>,"linux,default-trigger";
 		brickpi_led2_gpio = <&brickpi_led2>,"gpios:4";
 		brickpi_led2_trigger = <&brickpi_led2>,"linux,default-trigger";
+		brickpi_battery = <&brickpi_battery>,"status";
 	};
 };
