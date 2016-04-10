@@ -75,9 +75,17 @@ static bool turbo_mode = false;
 module_param(turbo_mode, bool, 0644);
 MODULE_PARM_DESC(turbo_mode, "Enable multiple frames per Rx transaction");
 
+static bool truesize_mode = false;
+module_param(truesize_mode, bool, 0644);
+MODULE_PARM_DESC(truesize_mode, "Report larger truesize value");
+
 static char *macaddr = ":";
 module_param(macaddr, charp, 0);
 MODULE_PARM_DESC(macaddr, "MAC address");
+
+static int packetsize = 0;
+module_param(packetsize, int, 0644);
+MODULE_PARM_DESC(packetsize, "Override the RX URB packet size");
 
 static int __must_check __smsc95xx_read_reg(struct usbnet *dev, u32 index,
 					    u32 *data, int in_pm)
@@ -817,10 +825,6 @@ static int smsc95xx_is_macaddr_param(struct usbnet *dev, u8 *dev_mac)
 
 static void smsc95xx_init_mac_address(struct usbnet *dev)
 {
-       /* Check module parameters */
-       if (smsc95xx_is_macaddr_param(dev, dev->net->dev_addr))
-               return;
-
 	/* try reading mac address from EEPROM */
 	if (smsc95xx_read_eeprom(dev, EEPROM_MAC_OFFSET, ETH_ALEN,
 			dev->net->dev_addr) == 0) {
@@ -831,7 +835,11 @@ static void smsc95xx_init_mac_address(struct usbnet *dev)
 		}
 	}
 
-	/* no eeprom, or eeprom values are invalid. generate random MAC */
+	/* Check module parameters */
+	if (smsc95xx_is_macaddr_param(dev, dev->net->dev_addr))
+		return;
+
+	/* no eeprom, or eeprom values are invalid, and no module parameter specified to set MAC. Generate random MAC */
 	eth_hw_addr_random(dev->net);
 	netif_dbg(dev, ifup, dev->net, "MAC address set to eth_random_addr\n");
 }
@@ -1002,13 +1010,13 @@ static int smsc95xx_reset(struct usbnet *dev)
 
 	if (!turbo_mode) {
 		burst_cap = 0;
-		dev->rx_urb_size = MAX_SINGLE_PACKET_SIZE;
+		dev->rx_urb_size = packetsize ? packetsize : MAX_SINGLE_PACKET_SIZE;
 	} else if (dev->udev->speed == USB_SPEED_HIGH) {
-		burst_cap = DEFAULT_HS_BURST_CAP_SIZE / HS_USB_PKT_SIZE;
-		dev->rx_urb_size = DEFAULT_HS_BURST_CAP_SIZE;
+		dev->rx_urb_size = packetsize ? packetsize : DEFAULT_HS_BURST_CAP_SIZE;
+		burst_cap = dev->rx_urb_size / HS_USB_PKT_SIZE;
 	} else {
-		burst_cap = DEFAULT_FS_BURST_CAP_SIZE / FS_USB_PKT_SIZE;
-		dev->rx_urb_size = DEFAULT_FS_BURST_CAP_SIZE;
+		dev->rx_urb_size = packetsize ? packetsize : DEFAULT_FS_BURST_CAP_SIZE;
+		burst_cap = dev->rx_urb_size / FS_USB_PKT_SIZE;
 	}
 
 	netif_dbg(dev, ifup, dev->net, "rx_urb_size=%ld\n",
@@ -1841,6 +1849,8 @@ static int smsc95xx_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
 				if (dev->net->features & NETIF_F_RXCSUM)
 					smsc95xx_rx_csum_offload(skb);
 				skb_trim(skb, skb->len - 4); /* remove fcs */
+				if (truesize_mode)
+					skb->truesize = size + sizeof(struct sk_buff);
 
 				return 1;
 			}
@@ -1858,6 +1868,8 @@ static int smsc95xx_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
 			if (dev->net->features & NETIF_F_RXCSUM)
 				smsc95xx_rx_csum_offload(ax_skb);
 			skb_trim(ax_skb, ax_skb->len - 4); /* remove fcs */
+			if (truesize_mode)
+				ax_skb->truesize = size + sizeof(struct sk_buff);
 
 			usbnet_skb_return(dev, ax_skb);
 		}

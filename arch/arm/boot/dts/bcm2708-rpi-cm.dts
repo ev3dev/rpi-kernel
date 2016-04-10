@@ -75,10 +75,15 @@
 	pinctrl-0 = <&i2s_pins>;
 };
 
+&random {
+	status = "okay";
+};
+
 / {
 	__overrides__ {
 		uart0 = <&uart0>,"status";
 		uart0_clkrate = <&clk_uart0>,"clock-frequency:0";
+		uart1 = <&uart1>,"status";
 		i2s = <&i2s>,"status";
 		spi = <&spi0>,"status";
 		i2c0 = <&i2c0>,"status";
@@ -87,6 +92,5 @@
 		i2c0_baudrate = <&i2c0>,"clock-frequency:0";
 		i2c1_baudrate = <&i2c1>,"clock-frequency:0";
 		i2c2_baudrate = <&i2c2>,"clock-frequency:0";
-		core_freq = <&clk_core>,"clock-frequency:0";
 	};
 };

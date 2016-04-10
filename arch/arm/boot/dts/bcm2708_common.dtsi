@@ -66,7 +66,7 @@
 			brcm,dma-channel-mask = <0x0f35>;
 		};
 
-		intc: interrupt-controller {
+		intc: interrupt-controller@7e00b200 {
 			compatible = "brcm,bcm2708-armctrl-ic";
 			reg = <0x7e00b200 0x200>;
 			interrupt-controller;
@@ -83,6 +83,18 @@
 		watchdog: watchdog@7e100000 {
 			compatible = "brcm,bcm2835-pm-wdt";
 			reg = <0x7e100000 0x28>;
+			status = "disabled";
+		};
+
+		cprman: cprman@7e101000 {
+			compatible = "brcm,bcm2835-cprman";
+			#clock-cells = <1>;
+			reg = <0x7e101000 0x2000>;
+
+			/* CPRMAN derives everything from the platform's
+			 * oscillator.
+			 */
+			clocks = <&clk_osc>;
 			status = "disabled";
 		};
 
@@ -120,9 +132,9 @@
 			reg = <0x7e202000 0x100>;
 			interrupts = <2 24>;
 			clocks = <&clk_core>;
-			dmas = <&dma 13>,
-			       <&dma 13>;
-			dma-names = "tx", "rx";
+			dmas = <&dma 13>;
+			dma-names = "rx-tx";
+			brcm,overclock-50 = <0>;
 			brcm,pio-limit = <1>;
 			status = "disabled";
 		};
@@ -189,9 +201,9 @@
 			reg = <0x7e300000 0x100>;
 			interrupts = <2 30>;
 			clocks = <&clk_mmc>;
-			dmas = <&dma 11>,
-			       <&dma 11>;
-			dma-names = "tx", "rx";
+			dmas = <&dma 11>;
+			dma-names = "rx-tx";
+			brcm,overclock-50 = <0>;
 			status = "disabled";
 		};
 
@@ -318,6 +330,14 @@
 			#clock-cells = <0>;
 			clock-div = <1>;
 			clock-mult = <2>;
+		};
+
+		clk_osc: clock@6 {
+			compatible = "fixed-clock";
+			reg = <6>;
+			#clock-cells = <0>;
+			clock-output-names = "osc";
+			clock-frequency = <19200000>;
 		};
 	};
 

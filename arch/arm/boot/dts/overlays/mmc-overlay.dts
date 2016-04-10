@@ -32,8 +32,16 @@
 		};
 	};
 
+	/* Redirect the existing sd_overclock and sd_force_pio dtparams */
+	fragment@3 {
+		target-path = "/__overrides__";
+
+		__overlay__ {
+			sd_overclock = <&mmc>,"brcm,overclock-50:0";
+		};
+	};
+
 	__overrides__ {
 		overclock_50     = <&frag0>,"brcm,overclock-50:0";
-		force_pio        = <&frag0>,"brcm,force-pio?";
 	};
 };

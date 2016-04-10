@@ -731,8 +731,6 @@ struct drm_connector {
 	uint8_t num_h_tile, num_v_tile;
 	uint8_t tile_h_loc, tile_v_loc;
 	uint16_t tile_h_size, tile_v_size;
-
-	struct list_head destroy_list;
 };
 
 /**
@@ -1539,5 +1537,20 @@ drm_property_blob_find(struct drm_device *dev, uint32_t id)
 #define drm_for_each_legacy_plane(plane, planelist) \
 	list_for_each_entry(plane, planelist, head) \
 		if (plane->type == DRM_PLANE_TYPE_OVERLAY)
+
+#define drm_for_each_plane(plane, dev) \
+	list_for_each_entry(plane, &(dev)->mode_config.plane_list, head)
+
+#define drm_for_each_crtc(crtc, dev) \
+	list_for_each_entry(crtc, &(dev)->mode_config.crtc_list, head)
+
+#define drm_for_each_connector(connector, dev) \
+	list_for_each_entry(connector, &(dev)->mode_config.connector_list, head)
+
+#define drm_for_each_encoder(encoder, dev) \
+	list_for_each_entry(encoder, &(dev)->mode_config.encoder_list, head)
+
+#define drm_for_each_fb(fb, dev) \
+	list_for_each_entry(fb, &(dev)->mode_config.fb_list, head)
 
 #endif /* __DRM_CRTC_H__ */

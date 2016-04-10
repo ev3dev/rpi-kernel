@@ -737,6 +737,12 @@ static int update_urb_state_xfer_comp(dwc_hc_t * hc,
 					     DWC_OTG_HC_XFER_COMPLETE,
 					     &short_read);
 
+	if (urb->actual_length + xfer_length > urb->length) {
+		printk_once(KERN_DEBUG "dwc_otg: DEVICE:%03d : %s:%d:trimming xfer length\n",
+			hc->dev_addr, __func__, __LINE__);
+		xfer_length = urb->length - urb->actual_length;
+	}
+
 	/* non DWORD-aligned buffer case handling. */
 	if (hc->align_buff && xfer_length && hc->ep_is_in) {
 		dwc_memcpy(urb->buf + urb->actual_length, hc->qh->dw_align_buf,
@@ -1423,6 +1429,13 @@ static void update_urb_state_xfer_intr(dwc_hc_t * hc,
 {
 	uint32_t bytes_transferred = get_actual_xfer_length(hc, hc_regs, qtd,
 							    halt_status, NULL);
+
+	if (urb->actual_length + bytes_transferred > urb->length) {
+		printk_once(KERN_DEBUG "dwc_otg: DEVICE:%03d : %s:%d:trimming xfer length\n",
+			hc->dev_addr, __func__, __LINE__);
+		bytes_transferred = urb->length - urb->actual_length;
+	}
+
 	/* non DWORD-aligned buffer case handling. */
 	if (hc->align_buff && bytes_transferred && hc->ep_is_in) {
 		dwc_memcpy(urb->buf + urb->actual_length, hc->qh->dw_align_buf,
