@@ -68,6 +68,7 @@ dtbo-$(RPI_DT_OVERLAYS) += pi3-miniuart-bt.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += piscreen.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += piscreen2r.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += pisound.dtbo
+dtbo-$(RPI_DT_OVERLAYS) += pistorms.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += pitft22.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += pitft28-capacitive.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += pitft28-resistive.dtbo
