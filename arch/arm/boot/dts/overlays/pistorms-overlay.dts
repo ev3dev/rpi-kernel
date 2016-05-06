@@ -1,0 +1,90 @@
+// Definitions for mindsensors.com PiStorms
+// http://www.mindsensors.com/stem-education/13-pistorms-base-kit
+//
+// with inspiration from piscreen-overlay.dts
+// init comes from https://github.com/adafruit/Adafruit_Python_ILI9341/blob/master/Adafruit_ILI9341/ILI9341.py
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709";
+
+	fragment@0 {
+		target-path = "/chosen";
+		__overlay__ {
+			bootargs = "fbcon=map:1";
+		};
+	};
+
+	fragment@1 {
+		target = <&i2c_arm>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+			clock-frequency = <50000>;
+
+			pistorms_bank_a: pistorms@1a {
+				compatible = "mindsensors,pistorms";
+				reg = <0x1a>;
+				status = "okay";
+			};
+
+			pistorms_bank_b: pistorms@1b {
+				compatible = "mindsensors,pistorms";
+				reg = <0x1b>;
+				status = "okay";
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&spi0>;
+		__overlay__ {
+			status = "okay";
+
+			spidev@0{
+				status = "disabled";
+			};
+
+			spidev@1{
+				status = "disabled";
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&gpio>;
+		__overlay__ {
+			pistorms_pins: pistorms_pins {
+				brcm,pins = <24 25>;
+				brcm,function = <1 1>; /* out out */
+			};
+		};
+	};
+
+	fragment@4 {
+		target = <&spi0>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			pistorms_display: pistorms_display@0 {
+				compatible = "adafruit,yx240qv29", "ilitek,ili9341";
+				reg = <0>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&pistorms_pins>;
+
+				spi-max-frequency = <64000000>;
+				reset-gpios = <&gpio 25 0>;
+				dc-gpios = <&gpio 24 0>;
+				rotation = <270>;
+			};
+		};
+	};
+
+	__overrides__ {
+		speed =		<&pistorms_display>,"spi-max-frequency:0";
+		rotate =	<&pistorms_display>,"rotation:0";
+	};
+};
