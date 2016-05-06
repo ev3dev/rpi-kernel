@@ -5,6 +5,8 @@
 # Rewritten to use lists instead of if-statements.
 #
 
+obj-y				+= lego/
+
 obj-y				+= irqchip/
 obj-y				+= bus/
 
