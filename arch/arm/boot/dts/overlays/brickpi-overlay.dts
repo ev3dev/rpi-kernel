@@ -1,0 +1,58 @@
+// Definitions for Dexter Industries BrickPi
+// http://www.dexterindustries.com/BrickPi/
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2708", "brcm,bcm2709";
+
+	fragment@0 {
+		target = <&uart0>;
+		__overlay__ {
+			status = "okay";
+			// custom property to identify that a BrickPi is attached to this port
+			brickpi,status = "okay";
+		};
+	};
+
+	fragment@1 {
+		target = <&i2c_arm>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+
+			// only BrickPi+ has battery voltage monitor, so disabled by default
+			brickpi_battery: brickpi_battery@48 {
+				compatible = "dexterind,brickpi-battery";
+				reg = <0x48>;
+				status = "disabled";
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&leds>;
+		__overlay__ {
+			brickpi_led1: bpi1 {
+				label = "brickpi:led1:blue:ev3dev";
+				linux,default-trigger = "default-on";
+				// override is needed for rev 1 board where this is gpio 21 instead
+				gpios = <&gpio 27 0>;
+			};
+			brickpi_led2: bpi2 {
+				label = "brickpi:led2:blue:ev3dev";
+				linux,default-trigger = "default-on";
+				gpios = <&gpio 18 0>;
+			};
+		};
+	};
+
+	__overrides__ {
+		brickpi_led1_gpio = <&brickpi_led1>,"gpios:4";
+		brickpi_led1_trigger = <&brickpi_led1>,"linux,default-trigger";
+		brickpi_led2_gpio = <&brickpi_led2>,"gpios:4";
+		brickpi_led2_trigger = <&brickpi_led2>,"linux,default-trigger";
+		brickpi_battery = <&brickpi_battery>,"status";
+	};
+};
