@@ -1,0 +1,119 @@
+// Definitions for mindsensors.com PiStorms
+// http://www.mindsensors.com/stem-education/13-pistorms-base-kit
+//
+// with inspiration from piscreen-overlay.dts
+// init comes from https://github.com/adafruit/Adafruit_Python_ILI9341/blob/master/Adafruit_ILI9341/ILI9341.py
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2835", "brcm,bcm2708", "brcm,bcm2709";
+
+	fragment@0 {
+		target-path = "/chosen";
+		__overlay__ {
+			bootargs = "fbcon=map:1";
+		};
+	};
+
+	fragment@1 {
+		target = <&i2c_arm>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+			clock-frequency = <50000>;
+
+			pistorms_bank_a: pistorms@1a {
+				compatible = "mindsensors,pistorms";
+				reg = <0x1a>;
+				status = "okay";
+			};
+
+			pistorms_bank_b: pistorms@1b {
+				compatible = "mindsensors,pistorms";
+				reg = <0x1b>;
+				status = "okay";
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&spi0>;
+		__overlay__ {
+			status = "okay";
+
+			spidev@0{
+				status = "disabled";
+			};
+
+			spidev@1{
+				status = "disabled";
+			};
+		};
+	};
+
+	fragment@3 {
+		target = <&gpio>;
+		__overlay__ {
+			pistorms_pins: pistorms_pins {
+				brcm,pins = <24 25>;
+				brcm,function = <1 1>; /* out out */
+			};
+		};
+	};
+
+	fragment@4 {
+		target = <&spi0>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			pistorms_display: pistorms_display@0 {
+				compatible = "ilitek,ili9341";
+				reg = <0>;
+				pinctrl-names = "default";
+				pinctrl-0 = <&pistorms_pins>;
+
+				spi-max-frequency = <64000000>;
+				rotate = <90>;
+				bgr;
+				fps = <30>;
+				buswidth = <8>;
+				reset-gpios = <&gpio 25 0>;
+				dc-gpios = <&gpio 24 0>;
+				debug = <0>;
+
+				init = <0x10000ef 0x03 0x80 0x02
+					0x10000cf 0x00 0xc1 0x30
+					0x10000ed 0x64 0x03 0x12 0x81
+					0x10000e8 0x85 0x00 0x78
+					0x10000cb 0x39 0x2c 0x00 0x34 0x02
+					0x10000f7 0x20
+					0x10000ea 0x00 0x00
+					0x10000c0 0x23
+					0x10000c1 0x10
+					0x10000c5 0x3e 0x28
+					0x10000c7 0x86
+					0x1000036 0x48
+					0x100003a 0x55
+					0x10000b1 0x00 0x18
+					0x10000b6 0x08 0x82 0x27
+					0x10000f2 0x00
+					0x1000026 0x01
+					0x10000e0 0x0f 0x31 0x2b 0x0c 0x0e 0x08 0x4e 0xf1 0x37 0x07 0x10 0x03 0x0e 0x09 0x00
+					0x10000e1 0x00 0x0e 0x14 0x03 0x11 0x07 0x31 0xc1 0x48 0x08 0x0f 0x0c 0x31 0x36 0x0f
+					0x1000011
+					0x2000078
+					0x1000029>;
+			};
+		};
+	};
+
+	__overrides__ {
+		speed =		<&pistorms_display>,"spi-max-frequency:0";
+		rotate =	<&pistorms_display>,"rotate:0";
+		fps =		<&pistorms_display>,"fps:0";
+		debug =		<&pistorms_display>,"debug:0";
+	};
+};
