@@ -16,6 +16,7 @@ dtbo-$(RPI_DT_OVERLAYS) += ads7846.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += akkordion-iqdacplus.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += at86rf233.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += bmp085_i2c-sensor.dtbo
+dtbo-$(RPI_DT_OVERLAYS) += brickpi.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += boomberry-dac.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += boomberry-digi.dtbo
 dtbo-$(RPI_DT_OVERLAYS) += dpi24.dtbo
