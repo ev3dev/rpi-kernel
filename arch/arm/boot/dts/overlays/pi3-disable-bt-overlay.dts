@@ -24,6 +24,7 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&uart0_pins>;
 			status = "okay";
+			rpi3,bluetooth = "disabled";
 		};
 	};
 
