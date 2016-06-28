@@ -102,6 +102,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart0_pins &bt_pins>;
 	status = "okay";
+	rpi3,bluetooth = "okay";
 };
 
 &uart1 {
