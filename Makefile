@@ -1,7 +1,7 @@
 VERSION = 4
 PATCHLEVEL = 4
 SUBLEVEL = 47
-EXTRAVERSION = -17-ev3dev-rpi
+EXTRAVERSION = -18-ev3dev-rpi
 NAME = Blurry Fish Butt
 
 # *DOCUMENTATION*
