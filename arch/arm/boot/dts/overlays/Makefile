@@ -21,6 +21,7 @@ dtbo-$(CONFIG_ARCH_BCM2835) += \
 	balena-fin.dtbo \
 	bmp085_i2c-sensor.dtbo \
 	brickpi.dtbo \
+	brickpi3.dtbo \
 	dht11.dtbo \
 	dionaudio-loco.dtbo \
 	dionaudio-loco-v2.dtbo \
