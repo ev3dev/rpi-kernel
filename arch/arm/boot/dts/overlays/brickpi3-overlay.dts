@@ -1,0 +1,56 @@
+// Definitions for Dexter Industries BrickPi3
+// http://www.dexterindustries.com/BrickPi/
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2708", "brcm,bcm2709";
+
+	fragment@0 {
+		target = <&uart0>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@1 {
+		target = <&i2c_arm>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@3 {
+		target = <&spi0>;
+		__overlay__ {
+			status = "okay";
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			brickpi3: brickpi3@1{
+				compatible = "ev3dev,brickpi3";
+				reg = <1>;
+				spi-max-frequency = <500000>;
+				#io-channel-cells = <1>;
+			};
+		};
+	};
+
+	fragment@4 {
+		target = <&spidev1>;
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+
+	fragment@5 {
+		target-path = "/";
+		__overlay__ {
+			brickpi3_battery {
+				compatible = "ev3dev,brickpi3-battery";
+				io-channels = <&brickpi3 3>;
+				io-channel-names = "voltage";
+			};
+		};
+	};
+};
