@@ -55,6 +55,9 @@
 				pinctrl-0 = <&pitft_pins>;
 
 				spi-max-frequency = <32000000>;
+				/* 2.8 " diagonal */
+				phys-width = <57>;
+				phys-height = <43>;
 				rotate = <90>;
 				fps = <25>;
 				bgr;
