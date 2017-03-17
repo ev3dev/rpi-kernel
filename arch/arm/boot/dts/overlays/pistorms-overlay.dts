@@ -76,6 +76,9 @@
 				pinctrl-0 = <&pistorms_pins>;
 
 				spi-max-frequency = <64000000>;
+				/* 2.4" diagonal */
+				phys-width = <49>;
+				phys-height = <37>;
 				rotate = <90>;
 				bgr;
 				fps = <30>;
