@@ -53,4 +53,11 @@
 			};
 		};
 	};
+
+	__overrides__ {
+		id1 = <&brickpi3>,"ev3dev,brickpi3-id1";
+		id2 = <&brickpi3>,"ev3dev,brickpi3-id2";
+		id3 = <&brickpi3>,"ev3dev,brickpi3-id3";
+		id4 = <&brickpi3>,"ev3dev,brickpi3-id4";
+	};
 };
