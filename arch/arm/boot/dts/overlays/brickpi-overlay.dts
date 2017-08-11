@@ -35,13 +35,13 @@
 		target = <&leds>;
 		__overlay__ {
 			brickpi_led1: bpi1 {
-				label = "brickpi:led1:blue:ev3dev";
+				label = "led1:blue:brick-status";
 				linux,default-trigger = "default-on";
 				// override is needed for rev 1 board where this is gpio 21 instead
 				gpios = <&gpio 27 0>;
 			};
 			brickpi_led2: bpi2 {
-				label = "brickpi:led2:blue:ev3dev";
+				label = "led2:blue:brick-status";
 				linux,default-trigger = "default-on";
 				gpios = <&gpio 18 0>;
 			};
