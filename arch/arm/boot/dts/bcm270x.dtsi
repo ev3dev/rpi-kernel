@@ -6,6 +6,10 @@
 		bootargs = "";
 	};
 
+	board {
+		compatible = "ev3dev,rpi-board";
+	};
+
 	soc: soc {
 
 		/delete-node/ timer@7e003000;
