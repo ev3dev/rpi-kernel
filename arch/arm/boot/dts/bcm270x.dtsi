@@ -7,6 +7,10 @@
 		/delete-property/ stdout-path;
 	};
 
+	board {
+		compatible = "ev3dev,rpi-board";
+	};
+
 	soc: soc {
 
 		watchdog: watchdog@7e100000 {
