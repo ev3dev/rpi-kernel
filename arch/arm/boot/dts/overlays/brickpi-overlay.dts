@@ -10,8 +10,10 @@
 		target = <&uart0>;
 		__overlay__ {
 			status = "okay";
-			// custom property to identify that a BrickPi is attached to this port
-			brickpi,status = "okay";
+			
+			controller {
+				compatible = "ev3dev,brickpi";
+			};
 		};
 	};
 
