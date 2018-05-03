@@ -76,7 +76,6 @@
 				pinctrl-0 = <&pistorms_pins>;
 
 				spi-max-frequency = <64000000>;
-				rotation = <90>;
 				reset-gpios = <&gpio 25 0>;
 				dc-gpios = <&gpio 24 0>;
 			};
