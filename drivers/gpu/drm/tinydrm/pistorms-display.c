@@ -134,7 +134,7 @@ static const struct drm_simple_display_pipe_funcs pistorms_pipe_funcs = {
 };
 
 static const struct drm_display_mode pistorms_mode = {
-	TINYDRM_MODE(240, 320, 37, 49),
+	TINYDRM_MODE(320, 240, 49, 37),
 };
 
 DEFINE_DRM_GEM_CMA_FOPS(pistorms_fops);
